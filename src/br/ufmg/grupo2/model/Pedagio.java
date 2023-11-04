@@ -32,45 +32,64 @@ public class Pedagio {
 
     public void ativarPedagio() {
         this.statusPedagio = StatusPedagio.DISPONIVEL;
-        new Thread() {
-            @Override
-            public void run() {
-                while (true) {
-                    setVeiculo(sistemaReconhecimentoVeiculo.getVeiculo());
-                    if (veiculo != null) {
-                        setStatusPedagio(StatusPedagio.OCUPADO);
-                        boolean statusPagamento;
-
-                        if (sistemaReconhecimentoVeiculo.verificaSistemaBordo() && veiculo.temSaldoSuficiente()) {
-                            statusPagamento = new IntegracaoSmartCard().realizarCobranca(veiculo, calculaValor(veiculo));
-                        } else {
-                            statusPagamento = new IntegracaoAutoAtendimento().realizarCobranca(veiculo, calculaValor(veiculo));
-                        }
-
-                        if(!statusPagamento) {
-                            setStatusPedagio(StatusPedagio.FALHA);
-                            setVeiculo(null);
-                            sistemaReconhecimentoVeiculo.setVeiculo(null);
-                            break;
-                        }
-                        adicionaSaldo(calculaValor(veiculo));
-                        cancela.setCancelaAberta(true);
-                        if (!sistemaReconhecimentoVeiculo.temLicensaValida()) {notificarLicensa();}
-                        try {
-                            TimeUnit.SECONDS.sleep(5);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        cancela.setCancelaAberta(false);
-
-                        setStatusPedagio(StatusPedagio.DISPONIVEL);
-                        setVeiculo(null);
-                        sistemaReconhecimentoVeiculo.setVeiculo(null);
-                    }
+        new Thread(() -> {
+            while (true) {
+                Veiculo veiculoAtual = sistemaReconhecimentoVeiculo.getVeiculo();
+                if (veiculoAtual != null) {
+                    processarPagamento(veiculoAtual);
                 }
             }
-        }.start();
+        }).start();
     }
+    
+    private void processarPagamento(Veiculo veiculo) {
+        setStatusPedagio(StatusPedagio.OCUPADO);
+        boolean statusPagamento;
+        
+        if (verificaSistemaEVeiculo(veiculo)) {
+            statusPagamento = new IntegracaoSmartCard().realizarCobranca(veiculo, calculaValor(veiculo));
+        } else {
+            statusPagamento = new IntegracaoAutoAtendimento().realizarCobranca(veiculo, calculaValor(veiculo));
+        }
+    
+        if (!statusPagamento) {
+            handleFailedPayment();
+            return;
+        }
+    
+        adicionaSaldo(calculaValor(veiculo));
+        handleValidPayment(veiculo);
+    }
+    
+    private boolean verificaSistemaEVeiculo(Veiculo veiculo) {
+        return sistemaReconhecimentoVeiculo.verificaSistemaBordo() && veiculo.temSaldoSuficiente();
+    }
+    
+    private void handleFailedPayment() {
+        setStatusPedagio(StatusPedagio.FALHA);
+        resetVeiculoAndSystem();
+    }
+    
+    private void handleValidPayment(Veiculo veiculo) {
+        cancela.setCancelaAberta(true);
+        if (!sistemaReconhecimentoVeiculo.temLicensaValida()) {
+            notificarLicensa();
+        }
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        cancela.setCancelaAberta(false);
+        setStatusPedagio(StatusPedagio.DISPONIVEL);
+        resetVeiculoAndSystem();
+    }
+    
+    private void resetVeiculoAndSystem() {
+        setVeiculo(null);
+        sistemaReconhecimentoVeiculo.setVeiculo(null);
+    }
+    
 
     private Float calculaValor(Veiculo veiculo) {
         float valor = 0.0f;
