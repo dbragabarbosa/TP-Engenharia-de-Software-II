@@ -55,19 +55,31 @@ public class GerenciadorPedagio extends Painel {
                 (0 a 5)
                 """;
         printMessage(line);
+    
         optionSelected = scanner.nextLine();
         int option = Integer.parseInt(optionSelected);
-        if(option >= 0 && option <= 5) {
-            dadosPedagios.getPedagios().get(option).ativarPedagio();
-            dadosPedagios.getPedagios().get(option).setStatusPedagio(StatusPedagio.DISPONIVEL);
-            line = """
-                Pedagio reiniciado!
-                Voltando ao menu
-                """;
-            printMessage(Colors.ANSI_GREEN + line + Colors.ANSI_GREEN);
-            startMenu();
+    
+        if (isOptionValid(option)) {
+            restartTollBooth(option);
         } else {
             pedagioNaoEncontrado();
         }
     }
+    
+    private boolean isOptionValid(int option) {
+        return option >= 0 && option <= 5;
+    }
+    
+    private void restartTollBooth(int option) {
+        Pedagio selectedPedagio = dadosPedagios.getPedagios().get(option);
+        selectedPedagio.ativarPedagio();
+        selectedPedagio.setStatusPedagio(StatusPedagio.DISPONIVEL);
+        line = """
+            Pedagio reiniciado!
+            Voltando ao menu
+            """;
+        printMessage(Colors.ANSI_GREEN + line + Colors.ANSI_GREEN);
+        startMenu();
+    }
+    
 }
