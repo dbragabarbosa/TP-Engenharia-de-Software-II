@@ -10,34 +10,41 @@ public class GerenciadorPedagio extends Painel {
     public GerenciadorPedagio(){};
 
     public void listadorPedagio() {
-        for(int count=0; count < dadosPedagios.getPedagios().size(); count++){
-
-
-            Pedagio pedagio = dadosPedagios.getPedagios().get(count);
-            String color;
-            if (pedagio.getStatusPedagio() == StatusPedagio.FALHA) {
-                color = Colors.ANSI_RED;
-            } else if (pedagio.getStatusPedagio() == StatusPedagio.OCUPADO) {
-                color = Colors.ANSI_YELLOW;
-            } else  color = Colors.ANSI_GREEN;
-
-
-                line = """
-                       Pedagio : %s
-                       Saldo : %s
-                       Status : %s  
-                       """;
-                printMessage(color + line.formatted(
-                        count,
-                        pedagio.getSaldoPedagio(),
-                        pedagio.getStatusPedagio().toString())
-                        + color
-                );
-            }
-
+        for (int count = 0; count < dadosPedagios.getPedagios().size(); count++) {
+            printPedagioDetails(count);
+        }
         startMenu();
     }
-
+    
+    private void printPedagioDetails(int count) {
+        Pedagio pedagio = dadosPedagios.getPedagios().get(count);
+        String color = obtainPedagioColor(pedagio.getStatusPedagio());
+    
+        printPedagioInformation(count, pedagio, color);
+    }
+    
+    private String obtainPedagioColor(StatusPedagio status) {
+        if (status == StatusPedagio.FALHA) {
+            return Colors.ANSI_RED;
+        } else if (status == StatusPedagio.OCUPADO) {
+            return Colors.ANSI_YELLOW;
+        }
+        return Colors.ANSI_GREEN;
+    }
+    
+    private void printPedagioInformation(int count, Pedagio pedagio, String color) {
+        String line = """
+                      Pedagio : %s
+                      Saldo : %s
+                      Status : %s  
+                      """;
+        printMessage(color + line.formatted(
+                count,
+                pedagio.getSaldoPedagio(),
+                pedagio.getStatusPedagio().toString())
+                + color
+        );
+    }    
 
     public void pedagioNaoEncontrado() {
         line = """
